@@ -35,13 +35,15 @@ describe("MessageSvc", function(){
         
     });
     var computeResult = function(id, done){
-        svc.getMessage(id, function(_err, _msg){
-            if(_err)
+        svc.getMessage(id)
+            .then(function(_msg){
+               msg = _msg;
+               done();
+            })
+            .catch(function(_err){
                 err = _err;
-            else
-                msg = _msg;
-            done();
-        });
+                done();
+            });
     };
     describe("getMessage", function(){
         describe("when foo id is 1", function(){

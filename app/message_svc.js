@@ -4,47 +4,54 @@ var MessageSvc = function(){
 
 MessageSvc.prototype = {
     random500: function(){
-        return 100 + Math.random()*100;
+        return 50 + Math.random()*100;
     },
-    findFoo: function(id, cb){
+    findFoo: function(id){
+        var dfd = Q.defer();
         setTimeout(function(){
             var result = _.find(db.foos, { id: id});
-            cb(result);
+            if(result)
+                return dfd.resolve(result);
+            dfd.reject("no foo");
         }, this.random500());
+        return dfd.promise;
     },
-    findBar: function(foo, cb){
+    findBar: function(foo){
+        var dfd = Q.defer();
         setTimeout(function(){
             var result = _.find(db.bars, { id: foo.bar_id});
-            cb(result);
+            if(result)
+                return dfd.resolve(result);
+            dfd.reject("no bar");
         }, this.random500());
+        return dfd.promise;
     },
-    findBazz: function(foo, cb){
+    findBazz: function(foo){
+        var dfd = Q.defer();
         setTimeout(function(){
             var result = _.find(db.bazzes, { id: foo.bazz_id});
-            cb(result);
+            if(result)
+                return dfd.resolve(result);
+            dfd.reject("no bazz");
         }, this.random500());
+        return dfd.promise;
     },
-    getMessage : function(id, cb){
+    getMessage : function(id){
         var that = this;
-        this.findFoo(id, function(foo){
-            if(!foo)
-                return cb("no foo");
-            var bar = null;
-            var bazz = null;
-            that.findBar(foo, function(_bar){
-                if(!_bar)
-                    return cb("no bar");
-               bar = _bar; 
-               if(bazz && bar)
-                cb(null, bar.msg + " " + bazz.msg);
+        var dfd = Q.defer();
+        this.findFoo(id)
+            .then(function(foo){
+                Q.all([that.findBar(foo), that.findBazz(foo)])
+                    .spread(function(bar, bazz){
+                        dfd.resolve(bar.msg + " " + bazz.msg);
+                    })
+                    .catch(function(err){
+                        dfd.reject(err);
+                    });
+            })
+            .catch(function(ex){
+                dfd.reject(ex);
             });
-            that.findBazz(foo, function(_bazz){
-                if(!_bazz)
-                    return cb("no bazz");
-               bazz = _bazz; 
-               if(bazz && bar)
-                cb(null, bar.msg + " " + bazz.msg);
-            });
-        });
+        return dfd.promise;
     }
 };
